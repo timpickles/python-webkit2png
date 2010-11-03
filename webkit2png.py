@@ -121,6 +121,7 @@ sys.exit(app.exec_())
         self.grabWholeWindow = kwargs.get('grabWholeWindow', False) 
         self.logRequests  = kwargs.get('logRequests', False) 
         self.postDom  = kwargs.get('postDom', False) 
+        self.userAgent  = kwargs.get('userAgent', None) 
 
         
         # Set some default options for QWebPage
@@ -205,8 +206,16 @@ class _WebkitRendererHelper(QObject):
         self._page.mainFrame().setScrollBarPolicy(Qt.Vertical, Qt.ScrollBarAlwaysOff)
         self._page.settings().setUserStyleSheetUrl(QUrl("data:text/css,html,body{overflow-y:hidden !important;}"))
 
+        # Set a UserAgent if one was specified
+        if self.userAgent:
+            logger.debug("Setting user agent to %s" % self.userAgent)
+            self._page.userAgentForUrl = self.userAgentForUrl
+
         # Show this widget
         self._window.show()
+
+    def userAgentForUrl(self, url):
+        return self.userAgent
 
     def __del__(self):
         """Clean up Qt4 objects. """
@@ -408,6 +417,8 @@ if __name__ == '__main__':
                       help="Grab whole window instead of frame (may be required for plugins)", default=False)
     parser.add_option("-r", "--requests", dest="logRequests", action="store_true",
                       help="Show URLs being requested", default=False)
+    parser.add_option("-u", "--useragent", dest="userAgent",
+                      help="Sets the User-Agent for all requests", metavar="FILE")
     parser.add_option("-p", "--postdom", dest="postDom", action="store_true",
                       help="Print the HTML post Javascript DOM render", default=False)
     parser.add_option("", "--style", dest="style",
@@ -475,6 +486,7 @@ if __name__ == '__main__':
             renderer.grabWholeWindow = options.window
             renderer.logRequests = options.logRequests
             renderer.postDom = options.postDom
+            renderer.userAgent = options.userAgent
 
             if options.scale:
                 renderer.scaleRatio = options.ratio
