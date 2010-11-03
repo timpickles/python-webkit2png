@@ -119,6 +119,7 @@ sys.exit(app.exec_())
         # Not that your desktop must be large enough for
         # fitting the whole window.
         self.grabWholeWindow = kwargs.get('grabWholeWindow', False) 
+        self.logRequests  = kwargs.get('logRequests', False) 
 
         
         # Set some default options for QWebPage
@@ -195,6 +196,7 @@ class _WebkitRendererHelper(QObject):
         # Connect required event listeners
         self.connect(self._page, SIGNAL("loadFinished(bool)"), self._on_load_finished)
         self.connect(self._page, SIGNAL("loadStarted()"), self._on_load_started)
+        self.connect(self._page.networkAccessManager(), SIGNAL("finished(QNetworkReply *)"), self._on_network_reply)
         self.connect(self._page.networkAccessManager(), SIGNAL("sslErrors(QNetworkReply *,const QList<QSslError>&)"), self._on_ssl_errors)
 
         # The way we will use this, it seems to be unesseccary to have Scrollbars enabled
@@ -312,6 +314,11 @@ class _WebkitRendererHelper(QObject):
         logger.debug("loading started")
         self.__loading = True
 
+    def _on_network_reply(self, reply):
+        """Ouput the URLs requested during page loading"""
+        if self.logRequests:
+            print reply.url().toString()
+
     # Eventhandler for "loadFinished(bool)" signal
     def _on_load_finished(self, result):
         """Slot that sets the '__loading' property to false and stores
@@ -327,7 +334,6 @@ class _WebkitRendererHelper(QObject):
         for e in errors:
             logger.warn("SSL: " + e.errorString())
         reply.ignoreSslErrors()
-
 
 def init_qtgui(display=None, style=None, qtargs=[]):
     """Initiates the QApplication environment using the given args."""
@@ -396,6 +402,8 @@ if __name__ == '__main__':
                       help="Time before the request will be canceled [default: %default]", metavar="SECONDS")
     parser.add_option("-W", "--window", dest="window", action="store_true",
                       help="Grab whole window instead of frame (may be required for plugins)", default=False)
+    parser.add_option("-r", "--requests", dest="logRequests", action="store_true",
+                      help="Show URLs being requested", default=False)
     parser.add_option("", "--style", dest="style",
                       help="Change the Qt look and feel to STYLE (e.G. 'windows').", metavar="STYLE")
     parser.add_option("-d", "--display", dest="display",
@@ -459,6 +467,7 @@ if __name__ == '__main__':
             renderer.wait = options.wait
             renderer.format = options.format
             renderer.grabWholeWindow = options.window
+            renderer.logRequests = options.logRequests
 
             if options.scale:
                 renderer.scaleRatio = options.ratio
