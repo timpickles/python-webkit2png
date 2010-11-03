@@ -120,6 +120,7 @@ sys.exit(app.exec_())
         # fitting the whole window.
         self.grabWholeWindow = kwargs.get('grabWholeWindow', False) 
         self.logRequests  = kwargs.get('logRequests', False) 
+        self.postDom  = kwargs.get('postDom', False) 
 
         
         # Set some default options for QWebPage
@@ -236,6 +237,9 @@ class _WebkitRendererHelper(QObject):
         #self._window.repaint()
         while QApplication.hasPendingEvents():
             QApplication.processEvents()
+
+        if self.postDom:
+            print self._page.mainFrame().toHtml().__str__().encode('ascii', 'replace')
         
         if self.grabWholeWindow:
             # Note that this does not fully ensure that the
@@ -404,6 +408,8 @@ if __name__ == '__main__':
                       help="Grab whole window instead of frame (may be required for plugins)", default=False)
     parser.add_option("-r", "--requests", dest="logRequests", action="store_true",
                       help="Show URLs being requested", default=False)
+    parser.add_option("-p", "--postdom", dest="postDom", action="store_true",
+                      help="Print the HTML post Javascript DOM render", default=False)
     parser.add_option("", "--style", dest="style",
                       help="Change the Qt look and feel to STYLE (e.G. 'windows').", metavar="STYLE")
     parser.add_option("-d", "--display", dest="display",
@@ -468,6 +474,7 @@ if __name__ == '__main__':
             renderer.format = options.format
             renderer.grabWholeWindow = options.window
             renderer.logRequests = options.logRequests
+            renderer.postDom = options.postDom
 
             if options.scale:
                 renderer.scaleRatio = options.ratio
